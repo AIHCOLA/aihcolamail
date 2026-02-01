@@ -1,4 +1,21 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+const API_BASE = (() => {
+  const rawBase = (import.meta.env.VITE_API_URL || '/api').trim();
+  if (rawBase.startsWith('http://') || rawBase.startsWith('https://')) {
+    const url = new URL(rawBase);
+    const pathname = url.pathname.replace(/\/$/, '');
+    if (pathname === '' || pathname === '/') {
+      url.pathname = '/api';
+    }
+    return url.toString().replace(/\/$/, '');
+  }
+
+  const normalized = rawBase.startsWith('/') ? rawBase : `/${rawBase}`;
+  if (normalized === '/' || normalized === '') {
+    return '/api';
+  }
+  return normalized.replace(/\/$/, '');
+})();
 
 export interface Mailbox {
   id: string;
