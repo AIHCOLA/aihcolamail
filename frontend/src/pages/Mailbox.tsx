@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mail, Copy, Trash2, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Mail, Copy, Trash2, RefreshCw, ArrowLeft, History, RotateCcw, ChevronDown } from 'lucide-react';
 import { api, Mailbox as MailboxType, Email } from '../utils/api';
+import { useMailboxHistory } from '../utils/history';
 import { format } from 'date-fns';
 
 export default function MailboxPage() {
@@ -13,6 +14,8 @@ export default function MailboxPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { history } = useMailboxHistory();
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -52,6 +55,17 @@ export default function MailboxPage() {
     loadEmails();
   };
 
+  const handleReset = () => {
+    if (confirm('确定要重置当前会话并返回首页重新生成邮箱吗？')) {
+      navigate('/');
+    }
+  };
+
+  const handleHistorySelect = (mailboxId: string) => {
+    setShowHistory(false);
+    navigate(`/mailbox/${mailboxId}`);
+  };
+
   const handleCopy = async () => {
     if (!mailbox) return;
     try {
@@ -65,7 +79,23 @@ export default function MailboxPage() {
 
   const handleDelete = async () => {
     if (!id) return;
-    if (!confirm('确定要删除这个邮箱吗？所有邮件将被永久删除。')) return;
+    if (!confirm('确定要删除这个邮箱吗？这个邮件将被永久删除。')) return;
+    
+    // 这里如果只是清空邮件，目前 API 好像只有删除整个邮箱的接口
+    // 如果用户意图是“删除这个邮箱”，则保持原逻辑。但根据用户描述，"删除"功能用于删除邮件。
+    // 假设目前后端只支持删除邮箱，那我们还是先保持删除邮箱的逻辑，或者提示用户。
+    // 但根据用户反馈："刷新和删除的功能应该用于删除收件箱中的邮件的"
+    // 如果没有“清空邮件”接口，我们暂时只能保留“删除邮箱”功能，但将其位置调整到邮件列表区域，
+    // 或者我们假装删除邮件（实际上还是删除邮箱？不，这样会误导）。
+    // 
+    // 既然用户希望“刷新和删除”是针对邮件的，那我们可以把删除按钮理解为“删除当前选中的邮件”或者“清空邮件”。
+    // 由于目前后端接口只有 deleteMailbox，没有 deleteEmail(批量) 或 clearEmails。
+    // 我们暂时把这个删除按钮定义为“删除当前邮箱（销毁）”，但放在邮件列表头部可能更合适？
+    // 不，用户说“生成的邮箱应该是使用重置和历史记录这两个功能”。
+    // 那么旧的“删除”按钮（销毁邮箱）其实就是“重置”的一种激进形式。
+    // 
+    // 让我们先把顶部区域改为“重置”和“历史记录”。
+    // 邮件列表区域放“刷新”。至于“删除”，如果后端不支持删邮件，先隐藏或保留在不显眼处，或者作为“销毁此邮箱”的功能。
     
     try {
       await api.deleteMailbox(id);
@@ -106,7 +136,7 @@ export default function MailboxPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Area: Mailbox Info & Main Actions */}
       <div className="card p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1">
@@ -121,44 +151,65 @@ export default function MailboxPage() {
                 我的邮箱
               </h1>
             </div>
-            <div className="flex items-center gap-3 mt-4">
-              <code className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white">
+            
+            <div className="flex items-center gap-3 mt-4 flex-wrap">
+              <code className="flex-1 min-w-[200px] px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white break-all">
                 {mailbox.email}
               </code>
-              <button
-                onClick={handleCopy}
-                className="btn-secondary flex items-center gap-2"
-              >
-                {copied ? (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    已复制
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    复制
-                  </>
-                )}
-              </button>
+              
+              <div className="flex gap-2">
+                 <button
+                  onClick={handleCopy}
+                  className="btn-secondary flex items-center gap-2 whitespace-nowrap"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? '已复制' : '复制'}
+                </button>
+
+                {/* Reset Button */}
+                <button
+                  onClick={handleReset}
+                  className="btn-secondary flex items-center gap-2 text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  重置
+                </button>
+
+                {/* History Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="btn-secondary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <History className="w-4 h-4" />
+                    历史记录
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showHistory && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-10 overflow-hidden">
+                      <div className="p-2 max-h-64 overflow-y-auto">
+                        {history.length === 0 ? (
+                          <div className="text-center py-4 text-sm text-gray-500">暂无历史记录</div>
+                        ) : (
+                          history.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleHistorySelect(item.id)}
+                              className={`w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 truncate ${
+                                item.id === id ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20' : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {item.email}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              刷新
-            </button>
-            <button
-              onClick={handleDelete}
-              className="btn-secondary flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <Trash2 className="w-4 h-4" />
-              删除
-            </button>
           </div>
         </div>
       </div>
@@ -167,9 +218,29 @@ export default function MailboxPage() {
         {/* Email List */}
         <div className="lg:col-span-1">
           <div className="card p-4">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              收件箱 ({emails.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                收件箱 ({emails.length})
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
+                  title="刷新邮件"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-red-600 dark:text-red-400"
+                  title="销毁此邮箱"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {emails.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -198,6 +269,61 @@ export default function MailboxPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate mb-1">
                       {email.subject || '(无主题)'}
                     </p>
+                    <p className="text-xs text-gray-500">
+                      {format(email.received_at * 1000, 'HH:mm')}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Email Content */}
+        <div className="lg:col-span-2">
+          {selectedEmail ? (
+            <div className="card p-6 h-full min-h-[500px]">
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  {selectedEmail.subject || '(无主题)'}
+                </h2>
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                  <div className="space-y-1">
+                    <p>
+                      <span className="font-medium">发件人:</span>{' '}
+                      {selectedEmail.from_name ? `${selectedEmail.from_name} <${selectedEmail.from_email}>` : selectedEmail.from_email}
+                    </p>
+                    <p>
+                      <span className="font-medium">时间:</span>{' '}
+                      {format(selectedEmail.received_at * 1000, 'yyyy-MM-dd HH:mm:ss')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="prose dark:prose-invert max-w-none">
+                {selectedEmail.html_content ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: selectedEmail.html_content }}
+                    className="email-content"
+                  />
+                ) : (
+                  <pre className="whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200">
+                    {selectedEmail.text_content}
+                  </pre>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="card p-6 h-full min-h-[500px] flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+              <Mail className="w-16 h-16 mb-4 opacity-50" />
+              <p className="text-lg">选择一个邮件查看详情</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                       {format(new Date(email.received_at * 1000), 'MM月dd日 HH:mm')}
                     </p>
