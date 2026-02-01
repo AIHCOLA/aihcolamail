@@ -1,35 +1,83 @@
 # 部署错误修复指南
 
-## 错误：Missing script: "build"
+## 错误 1: Missing script: "build" ✅ 已修复
 
 ### 问题原因
+Cloudflare 的构建系统期望项目有一个 `build` 脚本。
 
-Cloudflare 的构建系统期望项目有一个 `build` 脚本，但 Cloudflare Workers 实际上不需要构建步骤（TypeScript 由 Wrangler 自动处理）。
+### 解决方案
+已在根目录 `package.json` 中添加了 `build` 脚本。
+
+---
+
+## 错误 2: Missing entry-point to Worker script ⚠️ 当前问题
+
+### 问题原因
+部署命令 `npx wrangler deploy` 在根目录执行，但 `wrangler.toml` 配置文件在 `worker/` 子目录中。Wrangler 找不到配置文件。
 
 ### 解决方案
 
-已修复：在 `worker/package.json` 中添加了 `build` 脚本。
+**方法 1: 在 Cloudflare Dashboard 中修改部署命令（推荐）**
 
-### 下一步操作
-
-1. **提交更改到 Git**
-   ```bash
-   git add worker/package.json
-   git commit -m "fix: add build script for Cloudflare deployment"
-   git push
+1. 登录 Cloudflare Dashboard
+2. 进入 **Workers & Pages** > 选择您的 Worker
+3. 进入 **Settings** > **Builds & Deployments**
+4. 找到 **Deploy command** 字段
+5. 将 `npx wrangler deploy` 改为：
    ```
+   cd worker && npx wrangler deploy
+   ```
+6. 保存并重新部署
 
-2. **重新触发构建**
-   - 在 Cloudflare Dashboard 中，点击 **"重试构建"** 按钮
-   - 或者推送新的提交到仓库
+**方法 2: 在根目录创建 wrangler.toml（不推荐）**
 
-### 验证
+如果无法修改部署命令，可以在根目录创建一个 `wrangler.toml`，但需要调整路径。
 
-构建应该会成功完成。如果还有其他错误，请检查：
+**方法 3: 使用根目录的 deploy 脚本**
+
+在根目录 `package.json` 中添加 `deploy` 脚本：
+
+```json
+"deploy": "cd worker && npx wrangler deploy"
+```
+
+然后在 Cloudflare Dashboard 中将部署命令改为：`npm run deploy`
+
+---
+
+## 快速修复步骤
+
+### 步骤 1: 添加根目录 deploy 脚本
+
+在根目录 `package.json` 中添加：
+
+```json
+"deploy": "cd worker && npx wrangler deploy"
+```
+
+### 步骤 2: 在 Cloudflare Dashboard 中修改部署命令
+
+1. 进入 Worker 设置
+2. 将 **Deploy command** 从 `npx wrangler deploy` 改为 `npm run deploy`
+3. 保存并重新部署
+
+### 步骤 3: 提交更改
+
+```bash
+git add package.json
+git commit -m "fix: add deploy script in root package.json"
+git push
+```
+
+---
+
+## 验证
+
+部署应该会成功。如果还有问题，请检查：
 
 1. **Worker 配置是否正确**
    - 确认 `worker/wrangler.toml` 中的配置正确
-   - 确认数据库 ID 已正确设置
+   - 确认数据库 ID 已正确设置（不是 `your-database-id-here`）
 
 2. **环境变量是否配置**
    - `DOMAIN` = `aihcolamail.xyz`（必需）
@@ -38,23 +86,3 @@ Cloudflare 的构建系统期望项目有一个 `build` 脚本，但 Cloudflare 
 3. **D1 数据库是否已创建和初始化**
    - 确认数据库已创建
    - 确认已执行 `schema.sql`
-
-### 如果仍然失败
-
-如果添加 build 脚本后仍然失败，可以尝试：
-
-1. **检查构建命令配置**
-   - 在 Cloudflare Dashboard 中，进入 Worker 设置
-   - 检查 **Build command** 是否正确
-   - 对于 Workers，构建命令应该是：`npm run build`（现在已修复）
-
-2. **使用 Wrangler CLI 部署（替代方案）**
-   ```bash
-   cd worker
-   npm install
-   npx wrangler deploy
-   ```
-
-3. **检查根目录配置**
-   - 如果 Worker 在子目录中，确保 **Root directory** 设置为 `/worker`
-   - 或者调整构建命令为：`cd worker && npm run build`

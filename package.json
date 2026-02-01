@@ -13,6 +13,7 @@
     "build": "cd worker && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "build:worker": "cd worker && npm run build",
+    "deploy": "cd worker && npx wrangler deploy",
     "deploy:frontend": "cd frontend && npm run deploy",
     "deploy:worker": "cd worker && npm run deploy"
   },
