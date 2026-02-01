@@ -10,6 +10,7 @@
   "scripts": {
     "dev:frontend": "cd frontend && npm run dev",
     "dev:worker": "cd worker && npm run dev",
+    "build": "cd worker && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "build:worker": "cd worker && npm run build",
     "deploy:frontend": "cd frontend && npm run deploy",
