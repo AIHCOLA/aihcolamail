@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "wrangler dev",
+    "build": "echo 'Cloudflare Workers do not require a build step. TypeScript is handled by Wrangler.'",
     "deploy": "wrangler deploy",
     "db:create": "wrangler d1 create temp-email-db",
     "db:migrate": "wrangler d1 execute temp-email-db --file=../schema.sql"
