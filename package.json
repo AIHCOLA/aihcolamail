@@ -1,0 +1,21 @@
+{
+  "name": "temp-email-system",
+  "version": "1.0.0",
+  "description": "临时邮箱系统 - 支持发送和接收邮件",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "worker"
+  ],
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:worker": "cd worker && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:worker": "cd worker && npm run build",
+    "deploy:frontend": "cd frontend && npm run deploy",
+    "deploy:worker": "cd worker && npm run deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240222.0"
+  }
+}

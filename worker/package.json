@@ -1,0 +1,18 @@
+{
+  "name": "temp-email-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for temporary email system",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create temp-email-db",
+    "db:migrate": "wrangler d1 execute temp-email-db --file=../schema.sql"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240222.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.19.0"
+  }
+}
