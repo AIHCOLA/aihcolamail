@@ -8,7 +8,7 @@ name = "temp-email-worker"
 [[d1_databases]]
 binding = "DB"
 database_name = "temp-email-db"
-database_id = "your-database-id-here"
+database_id = "e4877723-7458-48b4-9f49-80598e31f8ca"
 
 [vars]
 DOMAIN = "aihcolamail.xyz"
